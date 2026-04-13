@@ -7,143 +7,319 @@
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-title" content="ChoreQuest"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.png"/>
   <title>ChoreQuest</title>
-  <link rel="stylesheet" href="style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#0a0a1a; --bg2:#12122a; --bd:#5860f8; --bd2:#8890ff;
+      --txt:#e8e8ff; --dim:#6668aa; --cyan:#00e8e8; --yel:#f8d820;
+      --red:#f83820; --grn:#30d878; --pur:#c848f8; --org:#f87820;
+      --font:'Press Start 2P',monospace; --cell:24px;
+    }
+    html,body { height:100%; background:var(--bg); color:var(--txt); font-family:var(--font); font-size:8px; overflow:hidden; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+
+    /* scanlines */
+    body::after { content:''; position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.12) 3px,rgba(0,0,0,.12) 4px); pointer-events:none; z-index:9999; }
+
+    /* screens */
+    .scr { display:none; position:fixed; inset:0; flex-direction:column; align-items:center; justify-content:center; overflow-y:auto; }
+    .scr.on { display:flex; }
+
+    /* nes box */
+    .box { border:4px solid var(--bd); box-shadow:0 0 0 4px var(--bg),0 0 0 8px var(--bd2); background:var(--bg2); }
+
+    /* buttons */
+    .btn { font-family:var(--font); font-size:9px; border:none; padding:11px 20px; cursor:pointer; letter-spacing:1px; margin:5px; box-shadow:4px 4px 0; display:inline-block; }
+    .btn:active { transform:translate(3px,3px); box-shadow:1px 1px 0; }
+    .btn-yel { background:var(--yel); color:#000; box-shadow-color:#a08000; box-shadow:4px 4px 0 #a08000; }
+    .btn-yel:active { box-shadow:1px 1px 0 #a08000; }
+    .btn-blu { background:var(--bd); color:#fff; box-shadow:4px 4px 0 #2028a0; }
+    .btn-blu:active { box-shadow:1px 1px 0 #2028a0; }
+    .btn-red { background:var(--red); color:#fff; box-shadow:4px 4px 0 #900; }
+    .btn-red:active { box-shadow:1px 1px 0 #900; }
+    .btn-grn { background:var(--grn); color:#000; box-shadow:4px 4px 0 #006a38; }
+    .btn-grn:active { box-shadow:1px 1px 0 #006a38; }
+    .btn-sm { font-size:7px; padding:7px 12px; }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .blink { animation:blink 1s step-end infinite; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+    /* ══ TITLE ══ */
+    #s-title { background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(88,96,248,.2),transparent); }
+    .t-logo { font-size:22px; color:var(--yel); text-shadow:4px 4px 0 #a08000; line-height:1.3; }
+    .t-logo span { color:var(--cyan); text-shadow:4px 4px 0 #006060; }
+    .t-sub  { font-size:7px; color:var(--pur); margin:8px 0 18px; letter-spacing:3px; }
+    .t-inner { padding:22px 28px; text-align:center; }
+    .scores { width:100%; margin:12px 0; padding:10px 14px; }
+    .srow { display:flex; justify-content:space-between; font-size:8px; color:var(--cyan); padding:5px 0; border-bottom:2px solid rgba(88,96,248,.3); }
+    .srow:last-child { border:none; }
+    #sync-txt { font-size:7px; }
+    .sync-ok  { color:var(--grn); }
+    .sync-no  { color:var(--red); }
+    .sync-wait{ color:var(--yel); animation:blink 1s step-end infinite; }
+
+    /* ══ MANAGE ══ */
+    #s-manage { justify-content:flex-start; }
+    .hdr { display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; background:var(--bg2); border-bottom:3px solid var(--bd); position:sticky; top:0; z-index:5; flex-shrink:0; }
+    .hdr-title { font-size:9px; color:var(--yel); flex:1; text-align:center; }
+    .mbody { width:100%; max-width:460px; padding:12px; }
+    .ci { display:flex; align-items:center; gap:8px; padding:9px 10px; border:3px solid var(--bd); background:var(--bg2); margin-bottom:7px; animation:fadeUp .2s ease; }
+    .ci-name { flex:1; font-size:7px; text-transform:uppercase; }
+    .ci-cat  { font-size:6px; padding:3px 5px; border:2px solid; }
+    .addform { padding:14px; display:flex; flex-direction:column; gap:10px; }
+    .addform-title { font-size:8px; color:var(--cyan); }
+    .flabel { font-size:7px; color:var(--dim); }
+    input.nes { font-family:var(--font); font-size:8px; background:#000; color:var(--cyan); border:3px solid var(--bd); padding:9px 10px; width:100%; outline:none; caret-color:var(--yel); text-transform:uppercase; }
+    input.nes::placeholder { color:var(--dim); }
+    #cat-btns { display:flex; flex-wrap:wrap; gap:6px; }
+    .cbt { font-family:var(--font); font-size:6px; padding:5px 9px; border:2px solid var(--dim); background:transparent; color:var(--dim); cursor:pointer; text-transform:uppercase; }
+    .cbt.on { border-color:var(--yel); color:var(--yel); background:rgba(248,216,32,.08); }
+
+    /* ══ PLAYER SELECT ══ */
+    #s-player { justify-content:flex-start; gap:0; }
+    .pcards { display:flex; gap:16px; padding:28px 16px; justify-content:center; flex-wrap:wrap; }
+    .pcard { width:138px; padding:18px 10px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px; transition:transform .1s; }
+    .pcard:active { transform:scale(.95); }
+    .pcard-name  { font-size:7px; color:var(--dim); }
+    .pcard-label { font-size:11px; color:var(--yel); }
+    .pcard-stat  { font-size:7px; color:var(--cyan); }
+
+    /* sprites */
+    .sp-you,.sp-partner,.sp-you-sm,.sp-partner-sm { image-rendering:pixelated; background-size:100% 100%; }
+    .sp-you { width:48px; height:56px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 14' shape-rendering='crispEdges'%3E%3Crect x='3' y='0' width='6' height='6' fill='%23f8d820'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23000'/%3E%3Crect x='7' y='2' width='1' height='1' fill='%23000'/%3E%3Crect x='4' y='4' width='4' height='1' fill='%23c84820'/%3E%3Crect x='2' y='6' width='8' height='5' fill='%235860f8'/%3E%3Crect x='1' y='7' width='2' height='3' fill='%235860f8'/%3E%3Crect x='9' y='7' width='2' height='3' fill='%235860f8'/%3E%3Crect x='3' y='11' width='3' height='3' fill='%23303060'/%3E%3Crect x='6' y='11' width='3' height='3' fill='%23303060'/%3E%3C/svg%3E"); }
+    .sp-partner { width:48px; height:56px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 14' shape-rendering='crispEdges'%3E%3Crect x='3' y='0' width='6' height='6' fill='%23f8d820'/%3E%3Crect x='2' y='0' width='2' height='2' fill='%23c84820'/%3E%3Crect x='8' y='0' width='2' height='2' fill='%23c84820'/%3E%3Crect x='3' y='0' width='6' height='2' fill='%23c84820'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23000'/%3E%3Crect x='7' y='2' width='1' height='1' fill='%23000'/%3E%3Crect x='4' y='4' width='4' height='1' fill='%23f87820'/%3E%3Crect x='2' y='6' width='8' height='5' fill='%23c848f8'/%3E%3Crect x='1' y='7' width='2' height='3' fill='%23c848f8'/%3E%3Crect x='9' y='7' width='2' height='3' fill='%23c848f8'/%3E%3Crect x='3' y='11' width='3' height='3' fill='%23303060'/%3E%3Crect x='6' y='11' width='3' height='3' fill='%23303060'/%3E%3C/svg%3E"); }
+
+    /* ══ GAME ══ */
+    #s-game {
+      justify-content:flex-start;
+      align-items:stretch;
+      overflow:hidden;
+      padding:0;
+    }
+
+    /* top bar */
+    .gtop {
+      display:flex; align-items:center; gap:8px;
+      padding:5px 8px; background:var(--bg2);
+      border-bottom:3px solid var(--bd);
+      flex-shrink:0;
+    }
+    .gtop .hi { font-size:5px; color:var(--dim); }
+    .gtop .hv { font-size:9px; color:var(--cyan); }
+    .gtop .hb { text-align:center; }
+    .gbadge { margin-left:auto; font-size:7px; background:var(--yel); color:#000; padding:4px 8px; box-shadow:2px 2px 0 #a08000; }
+
+    /* middle: board + sidebar side by side */
+    .gmid {
+      display:flex; gap:6px;
+      padding:5px 5px 0;
+      flex-shrink:0;
+      justify-content:center;
+    }
+    .board-wrap {
+      position:relative;
+      width:calc(var(--cell)*10);
+      height:calc(var(--cell)*20);
+      overflow:hidden;
+      flex-shrink:0;
+    }
+    #cvs { display:block; image-rendering:pixelated; }
+    #rfx { position:absolute; inset:0; pointer-events:none; }
+    @keyframes rowFlash { 0%{opacity:1} 100%{opacity:0} }
+    .rf { position:absolute; left:0; right:0; height:var(--cell); background:#fff; animation:rowFlash .4s ease forwards; }
+
+    .gside { display:flex; flex-direction:column; gap:5px; flex-shrink:0; width:80px; }
+    .nxt { padding:5px 6px; text-align:center; }
+    .nxt-lbl { font-size:5px; color:var(--dim); margin-bottom:3px; }
+    #ncvs { image-rendering:pixelated; }
+    .sstats { padding:5px 6px; display:flex; flex-direction:column; gap:0; }
+    .ssb { padding:3px 0; border-bottom:1px solid rgba(88,96,248,.2); text-align:center; }
+    .ssl { font-size:5px; color:var(--dim); }
+    .ssv { font-size:8px; color:var(--cyan); }
+
+    /* chore panel */
+    .cpanel {
+      flex:1; margin:5px 5px 0;
+      overflow-y:auto; -webkit-overflow-scrolling:touch;
+      border:3px solid var(--bd);
+      box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--bd2);
+      background:var(--bg2);
+      min-height:0;
+    }
+    .cpanel-hdr {
+      font-size:6px; color:var(--yel);
+      padding:6px 10px; text-align:center;
+      border-bottom:2px solid var(--bd);
+      background:var(--bg2);
+      position:sticky; top:0; z-index:2;
+    }
+    .citem {
+      display:flex; align-items:center; gap:8px;
+      padding:8px 10px;
+      border-bottom:2px solid rgba(88,96,248,.2);
+    }
+    .citem-info { flex:1; min-width:0; }
+    .citem-name { font-size:7px; color:var(--txt); text-transform:uppercase; line-height:1.6; }
+    .citem-cat  { font-size:5px; color:var(--dim); margin-top:1px; }
+    .citem-done { font-size:6px; color:var(--grn); flex-shrink:0; }
+    .dbtn {
+      font-family:var(--font); font-size:7px;
+      background:var(--grn); color:#000; border:none;
+      padding:8px 10px; cursor:pointer;
+      box-shadow:3px 3px 0 #006a38;
+      flex-shrink:0; min-width:56px; text-align:center;
+    }
+    .dbtn:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #006a38; }
+    .citem.done { opacity:.4; }
+    .citem.done .citem-name { text-decoration:line-through; }
+
+    /* d-pad */
+    .dpad {
+      display:flex; justify-content:center; gap:6px;
+      padding:5px 0 env(safe-area-inset-bottom,5px);
+      background:rgba(10,10,26,.95);
+      border-top:3px solid var(--bd);
+      flex-shrink:0;
+    }
+    .dp { font-family:var(--font); font-size:14px; color:var(--txt); background:var(--bg2); border:3px solid var(--bd); width:56px; height:44px; cursor:pointer; box-shadow:3px 3px 0 var(--bd); display:flex; align-items:center; justify-content:center; user-select:none; }
+    .dp:active { transform:translate(2px,2px); box-shadow:1px 1px 0 var(--bd); }
+
+    /* ══ GAME OVER ══ */
+    #s-over { background:var(--bg); }
+    .over-box { padding:24px 28px; text-align:center; max-width:300px; }
+    .over-title { font-size:13px; color:var(--yel); margin-bottom:16px; text-shadow:4px 4px 0 #a08000; animation:blink 1.5s step-end infinite; }
+    .over-scores { margin-bottom:16px; }
+    .over-scores .srow { font-size:8px; }
+    .srow.hi { color:var(--yel); }
+  </style>
 </head>
 <body>
-<div id="app">
 
-  <!-- TITLE -->
-  <div id="screen-title" class="screen active">
-    <div class="title-glow"></div>
-    <div class="title-content">
-      <div class="nes-border title-box">
-        <div class="title-logo">CHORE<span>QUEST</span></div>
-        <div class="title-sub">★ HOUSEHOLD EDITION ★</div>
-        <div class="blink title-press">PRESS START</div>
+<!-- ══ TITLE ══ -->
+<div id="s-title" class="scr on">
+  <div class="box t-inner">
+    <div class="t-logo">CHORE<span>QUEST</span></div>
+    <div class="t-sub">★ HOUSEHOLD EDITION ★</div>
+    <div class="blink" style="font-size:9px;color:#fff">PRESS START</div>
+  </div>
+  <div class="box scores" style="width:280px">
+    <div class="srow"><span>HI-SCORE</span><span id="t-hi">000000</span></div>
+    <div class="srow"><span>BEST DAY</span><span id="t-bd">0 CHORES</span></div>
+    <div class="srow" style="justify-content:center"><span id="sync-txt" class="sync-wait">● CONNECTING...</span></div>
+  </div>
+  <button class="btn btn-yel" id="b-start">► START GAME</button>
+  <button class="btn btn-blu" id="b-manage">✎ MANAGE CHORES</button>
+</div>
+
+<!-- ══ MANAGE ══ -->
+<div id="s-manage" class="scr">
+  <div class="hdr">
+    <button class="btn btn-blu btn-sm" id="b-back-manage">◄ BACK</button>
+    <span class="hdr-title">CHORE LIST</span>
+  </div>
+  <div class="mbody">
+    <div id="chore-list"></div>
+    <div class="box addform">
+      <div class="addform-title">ADD NEW CHORE</div>
+      <input id="new-name" class="nes" type="text" placeholder="CHORE NAME..." maxlength="24"/>
+      <div class="flabel">CATEGORY:</div>
+      <div id="cat-btns"></div>
+      <button class="btn btn-yel" id="b-add">+ ADD CHORE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PLAYER SELECT ══ -->
+<div id="s-player" class="scr">
+  <div class="hdr">
+    <button class="btn btn-blu btn-sm" id="b-back-player">◄ BACK</button>
+    <span class="hdr-title">WHO ARE YOU?</span>
+  </div>
+  <div class="pcards">
+    <div class="pcard box" id="pc-you">
+      <div class="sp-you"></div>
+      <div class="pcard-name">PLAYER 1</div>
+      <div class="pcard-label">YOU</div>
+      <div class="pcard-stat" id="ps-you">TODAY: 0</div>
+    </div>
+    <div class="pcard box" id="pc-partner">
+      <div class="sp-partner"></div>
+      <div class="pcard-name">PLAYER 2</div>
+      <div class="pcard-label">PARTNER</div>
+      <div class="pcard-stat" id="ps-partner">TODAY: 0</div>
+    </div>
+  </div>
+  <div style="font-size:7px;color:var(--dim);text-align:center;padding:0 20px">TAP YOUR CHARACTER<br>TO START PLAYING</div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div id="s-game" class="scr">
+
+  <!-- Top HUD -->
+  <div class="gtop">
+    <button class="btn btn-blu btn-sm" id="b-ghome" style="margin:0;padding:5px 9px">⌂</button>
+    <div class="hb"><div class="hi">SCORE</div><div class="hv" id="g-score">000000</div></div>
+    <div class="hb"><div class="hi">LINES</div><div class="hv" id="g-lines">00</div></div>
+    <div class="hb"><div class="hi">BEST</div><div class="hv" id="g-hi">000000</div></div>
+    <div class="gbadge" id="g-badge">YOU</div>
+  </div>
+
+  <!-- Board + stats sidebar -->
+  <div class="gmid">
+    <div class="board-wrap box">
+      <canvas id="cvs"></canvas>
+      <div id="rfx"></div>
+    </div>
+    <div class="gside">
+      <div class="nxt box">
+        <div class="nxt-lbl">NEXT</div>
+        <canvas id="ncvs"></canvas>
       </div>
-      <div class="title-scores nes-border">
-        <div class="score-row"><span>HI-SCORE</span><span id="title-hiscore">000000</span></div>
-        <div class="score-row"><span>BEST DAY</span><span id="title-bestday">0 CHORES</span></div>
-        <div class="score-row sync-row"><span id="sync-status" class="connecting">● CONNECTING...</span></div>
+      <div class="sstats box">
+        <div class="ssb"><div class="ssl">TODAY</div><div class="ssv" id="g-today">0</div></div>
+        <div class="ssb"><div class="ssl">YOU</div><div class="ssv" id="g-you">0</div></div>
+        <div class="ssb"><div class="ssl">PARTNER</div><div class="ssv" id="g-partner">0</div></div>
+        <div class="ssb"><div class="ssl">BEST DAY</div><div class="ssv" id="g-bestday">0</div></div>
       </div>
-      <button class="nes-btn" id="btn-start">► START GAME</button>
-      <button class="nes-btn secondary" id="btn-manage">✎ MANAGE CHORES</button>
     </div>
   </div>
 
-  <!-- MANAGE -->
-  <div id="screen-manage" class="screen">
-    <div class="screen-header">
-      <button class="nes-btn small" id="btn-back-manage">◄ BACK</button>
-      <span class="screen-title-text">CHORE LIST</span>
-      <span class="sync-dot" id="manage-sync"></span>
-    </div>
-    <div class="manage-body">
-      <div id="chore-list-items"></div>
-      <div class="add-chore-form nes-border">
-        <div class="form-title">ADD NEW CHORE</div>
-        <input type="text" id="new-chore-name" class="nes-input" placeholder="CHORE NAME..." maxlength="24"/>
-        <div class="cat-select">
-          <span class="form-label">CATEGORY:</span>
-          <div id="cat-buttons"></div>
-        </div>
-        <button class="nes-btn" id="btn-add-chore">+ ADD</button>
-      </div>
-    </div>
+  <!-- Chore panel -->
+  <div class="cpanel">
+    <div class="cpanel-hdr blink">✦ COMPLETE A CHORE → DROPS A BLOCK ✦</div>
+    <div id="g-chores"></div>
   </div>
 
-  <!-- PLAYER SELECT -->
-  <div id="screen-player" class="screen">
-    <div class="screen-header">
-      <button class="nes-btn small" id="btn-back-player">◄ BACK</button>
-      <span class="screen-title-text">SELECT PLAYER</span>
-    </div>
-    <div class="player-select-body">
-      <div class="player-card nes-border" id="player-you">
-        <div class="player-sprite you-sprite"></div>
-        <div class="player-name">PLAYER 1</div>
-        <div class="player-label">YOU</div>
-        <div class="player-stat" id="stat-you">TODAY: 0</div>
-      </div>
-      <div class="player-card nes-border" id="player-partner">
-        <div class="player-sprite partner-sprite"></div>
-        <div class="player-name">PLAYER 2</div>
-        <div class="player-label">PARTNER</div>
-        <div class="player-stat" id="stat-partner">TODAY: 0</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- GAME -->
-  <div id="screen-game" class="screen">
-
-    <!-- Top HUD -->
-    <div class="game-topbar">
-      <button class="nes-btn small" id="btn-game-home">⌂</button>
-      <div class="hud-item"><div class="hud-label">SCORE</div><div class="hud-val" id="hud-score">000000</div></div>
-      <div class="hud-item"><div class="hud-label">LINES</div><div class="hud-val" id="hud-lines">00</div></div>
-      <div class="hud-item"><div class="hud-label">BEST</div><div class="hud-val" id="rp-hiscore">000000</div></div>
-      <div class="player-badge" id="current-player-tag">YOU</div>
-    </div>
-
-    <!-- Board + sidebar -->
-    <div class="game-center">
-      <div class="board-wrap nes-border">
-        <canvas id="game-canvas"></canvas>
-        <div id="row-clear-fx"></div>
-      </div>
-      <div class="game-sidebar">
-        <div class="next-piece-area nes-border">
-          <div class="hud-label">NEXT</div>
-          <canvas id="next-canvas"></canvas>
-        </div>
-        <div class="side-stats nes-border">
-          <div class="stat-block"><div class="stat-label">TODAY</div><div class="stat-val" id="rp-today">0</div></div>
-          <div class="stat-block"><div class="stat-label">YOU</div><div class="stat-val" id="rp-you">0</div></div>
-          <div class="stat-block"><div class="stat-label">PARTNER</div><div class="stat-val" id="rp-partner">0</div></div>
-          <div class="stat-block"><div class="stat-label">BEST DAY</div><div class="stat-val" id="rp-bestday">0</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chore panel — always visible, scrollable -->
-    <div class="chore-sheet nes-border">
-      <div class="chore-sheet-title">★ COMPLETE A CHORE TO DROP A BLOCK ★</div>
-      <div id="game-chore-list"></div>
-    </div>
-
-    <!-- D-pad controls -->
-    <div class="touch-controls">
-      <button class="touch-btn" id="tc-left">◄</button>
-      <button class="touch-btn" id="tc-rotate">↺</button>
-      <button class="touch-btn" id="tc-right">►</button>
-      <button class="touch-btn" id="tc-down">▼</button>
-    </div>
-
-  </div>
-
-  <!-- GAME OVER -->
-  <div id="screen-gameover" class="screen">
-    <div class="gameover-content nes-border">
-      <div id="gameover-title" class="gameover-title">GAME OVER</div>
-      <div class="gameover-scores">
-        <div class="score-row"><span>SCORE</span><span id="go-score">0</span></div>
-        <div class="score-row"><span>ROWS CLEARED</span><span id="go-lines">0</span></div>
-        <div class="score-row"><span>CHORES DONE</span><span id="go-chores">0</span></div>
-        <div class="score-row hi"><span>HI-SCORE</span><span id="go-hiscore">0</span></div>
-      </div>
-      <button class="nes-btn" id="btn-play-again">► PLAY AGAIN</button>
-      <button class="nes-btn secondary" id="btn-go-home">⌂ HOME</button>
-    </div>
+  <!-- D-pad -->
+  <div class="dpad">
+    <button class="dp" id="dp-l">◄</button>
+    <button class="dp" id="dp-rot">↺</button>
+    <button class="dp" id="dp-r">►</button>
+    <button class="dp" id="dp-d">▼</button>
   </div>
 
 </div>
+
+<!-- ══ GAME OVER ══ -->
+<div id="s-over" class="scr">
+  <div class="box over-box">
+    <div class="over-title" id="over-title">GAME OVER</div>
+    <div class="over-scores">
+      <div class="srow"><span>SCORE</span><span id="o-score">0</span></div>
+      <div class="srow"><span>LINES</span><span id="o-lines">0</span></div>
+      <div class="srow"><span>CHORES DONE</span><span id="o-chores">0</span></div>
+      <div class="srow hi"><span>HI-SCORE</span><span id="o-hi">0</span></div>
+    </div>
+    <button class="btn btn-yel" id="b-again">► PLAY AGAIN</button>
+    <button class="btn btn-blu" id="b-ohome">⌂ HOME</button>
+  </div>
+</div>
+
 <script src="audio.js"></script>
-<script type="module" src="firebase.js"></script>
+<script type="module" src="game.js"></script>
 </body>
 </html>
