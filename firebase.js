@@ -312,13 +312,13 @@ function scheduleWait() {
   clearTimeout(S.dropTimer);
   if (!S.gameRunning) return;
   S.waitingForChore = true;
-  document.getElementById('drop-overlay').classList.remove('hidden');
+  
 }
 
 function onChoreDone() {
   if (!S.gameRunning || !S.waitingForChore) return;
   S.waitingForChore = false;
-  document.getElementById('drop-overlay').classList.add('hidden');
+  
   dropLoop();
 }
 
@@ -461,16 +461,24 @@ function renderGameChoreList() {
   const el = document.getElementById('game-chore-list');
   if (!el) return;
   el.innerHTML = '';
+  if (S.chores.length === 0) {
+    el.innerHTML = '<div style="font-size:7px;color:var(--dim);padding:14px;text-align:center">NO CHORES ADDED YET.<br><br>GO HOME → MANAGE CHORES.</div>';
+    return;
+  }
   S.chores.forEach(c => {
     const done = isDoneToday(c.id);
     const div = document.createElement('div');
     div.className = 'game-chore-item' + (done ? ' completed' : '');
+    const cat = c.category || 'OTHER';
+    const catColor = CAT_COLORS[cat] || '#888';
     div.innerHTML = `
-      <div class="gc-name">${c.name}</div>
-      <div class="gc-cat" style="color:${CAT_COLORS[c.category]||'#888'}">${c.category}</div>
+      <div style="flex:1;min-width:0">
+        <div class="gc-name">${c.name}</div>
+        <div class="gc-meta" style="color:${catColor}">${cat}</div>
+      </div>
       ${!done
-        ? `<button class="nes-btn done-btn" data-id="${c.id}">✓ DONE</button>`
-        : `<div style="font-size:5px;color:var(--green)">✓ ${doneBy(c.id)||''}</div>`}`;
+        ? `<button class="done-chore-btn" data-id="${c.id}">✓ DONE</button>`
+        : `<div class="gc-done-label">✓ ${doneBy(c.id)||'DONE'}</div>`}`;
     if (!done) {
       div.querySelector('button').addEventListener('click', () => markChoreDone(c.id));
     }
@@ -491,11 +499,11 @@ async function markChoreDone(id) {
 
 // ── Controls ─────────────────────────────────────────────────
 function tryMove(dx) {
-  if (!S.currentPiece || !S.gameRunning || S.waitingForChore) return;
+  if (!S.currentPiece || !S.gameRunning) return;
   if (!collides(S.currentPiece,dx,0)) { S.currentPiece.x+=dx; Audio.move(); drawBoard(); }
 }
 function tryRotate() {
-  if (!S.currentPiece || !S.gameRunning || S.waitingForChore) return;
+  if (!S.currentPiece || !S.gameRunning) return;
   const rot = rotateCW(S.currentPiece.shape);
   for (const dx of [0,1,-1]) {
     if (!collides(S.currentPiece,dx,0,rot)) { S.currentPiece.x+=dx; S.currentPiece.shape=rot; Audio.move(); drawBoard(); return; }
@@ -523,7 +531,7 @@ document.addEventListener('touchstart', e => {
   ts = { x: e.touches[0].clientX, y: e.touches[0].clientY };
 }, {passive:true});
 document.addEventListener('touchend', e => {
-  if (!ts || !S.gameRunning || S.waitingForChore) return;
+  if (!ts || !S.gameRunning) return;
   const dx = e.changedTouches[0].clientX - ts.x;
   const dy = e.changedTouches[0].clientY - ts.y;
   if (Math.abs(dx)<10 && Math.abs(dy)<10) { tryRotate(); }
@@ -533,6 +541,12 @@ document.addEventListener('touchend', e => {
 }, {passive:true});
 
 // ── Game over buttons ────────────────────────────────────────
+document.getElementById('btn-game-home').addEventListener('click', () => {
+  Audio.select();
+  S.gameRunning = false;
+  clearTimeout(S.dropTimer);
+  initTitle();
+});
 document.getElementById('btn-play-again').addEventListener('click', () => {
   Audio.select();
   if (S.chores.length===0) { initTitle(); return; }
