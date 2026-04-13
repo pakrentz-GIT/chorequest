@@ -205,6 +205,12 @@ document.getElementById('b-back-player').addEventListener('click',()=>{ SFX.sele
     SFX.select();
     player=p.toUpperCase();
     localStorage.setItem('cq-player',player);
+    // Always start fresh
+    running=false;
+    clearTimeout(dtimer);
+    board=null;
+    sessionScore=0;
+    sessionLines=0;
     showChoreList();
   });
 });
