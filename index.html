@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#0a0a1a"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <title>ChoreQuest</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ TITLE ══ -->
+  <div id="screen-title" class="screen active">
+    <div class="title-glow"></div>
+    <div class="title-content">
+      <div class="nes-border title-box">
+        <div class="title-logo">CHORE<span>QUEST</span></div>
+        <div class="title-sub">★ HOUSEHOLD EDITION ★</div>
+        <div class="blink title-press">PRESS START</div>
+      </div>
+      <div class="title-scores nes-border">
+        <div class="score-row"><span>HI-SCORE</span><span id="title-hiscore">000000</span></div>
+        <div class="score-row"><span>BEST DAY</span><span id="title-bestday">0 CHORES</span></div>
+        <div class="score-row sync-row"><span id="sync-status">● CONNECTING...</span></div>
+      </div>
+      <button class="nes-btn" id="btn-start">► START GAME</button>
+      <button class="nes-btn secondary" id="btn-manage">✎ MANAGE CHORES</button>
+    </div>
+  </div>
+
+  <!-- ══ MANAGE ══ -->
+  <div id="screen-manage" class="screen">
+    <div class="screen-header">
+      <button class="nes-btn small" id="btn-back-manage">◄ BACK</button>
+      <span class="screen-title-text">CHORE LIST</span>
+      <span class="sync-dot" id="manage-sync"></span>
+    </div>
+    <div class="manage-body">
+      <div id="chore-list-items"></div>
+      <div class="add-chore-form nes-border">
+        <div class="form-title">ADD NEW CHORE</div>
+        <input type="text" id="new-chore-name" class="nes-input" placeholder="CHORE NAME..." maxlength="24"/>
+        <div class="cat-select">
+          <span class="form-label">CATEGORY:</span>
+          <div id="cat-buttons"></div>
+        </div>
+        <button class="nes-btn" id="btn-add-chore">+ ADD</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PLAYER SELECT ══ -->
+  <div id="screen-player" class="screen">
+    <div class="screen-header">
+      <button class="nes-btn small" id="btn-back-player">◄ BACK</button>
+      <span class="screen-title-text">SELECT PLAYER</span>
+    </div>
+    <div class="player-select-body">
+      <div class="player-card nes-border" id="player-you" data-player="YOU">
+        <div class="player-sprite you-sprite"></div>
+        <div class="player-name">PLAYER 1</div>
+        <div class="player-label">YOU</div>
+        <div class="player-stat" id="stat-you">TODAY: 0</div>
+      </div>
+      <div class="player-card nes-border" id="player-partner" data-player="PARTNER">
+        <div class="player-sprite partner-sprite"></div>
+        <div class="player-name">PLAYER 2</div>
+        <div class="player-label">PARTNER</div>
+        <div class="player-stat" id="stat-partner">TODAY: 0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GAME ══ -->
+  <div id="screen-game" class="screen">
+    <div class="game-layout">
+
+      <div class="side-panel left-panel nes-border">
+        <div class="panel-title">MISSIONS</div>
+        <div id="game-chore-list"></div>
+        <div class="panel-player-tag" id="current-player-tag">▶ YOU</div>
+      </div>
+
+      <div class="board-area">
+        <div class="board-header">
+          <div class="hud-item"><div class="hud-label">SCORE</div><div class="hud-val" id="hud-score">000000</div></div>
+          <div class="hud-item"><div class="hud-label">LINES</div><div class="hud-val" id="hud-lines">00</div></div>
+        </div>
+        <div class="board-wrap nes-border">
+          <canvas id="game-canvas"></canvas>
+          <div id="row-clear-fx"></div>
+        </div>
+        <div class="next-piece-area nes-border">
+          <div class="hud-label">NEXT</div>
+          <canvas id="next-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="side-panel right-panel nes-border">
+        <div class="panel-title">STATS</div>
+        <div class="stat-block"><div class="stat-label">HI-SCORE</div><div class="stat-val" id="rp-hiscore">000000</div></div>
+        <div class="stat-block"><div class="stat-label">TODAY</div><div class="stat-val" id="rp-today">0</div></div>
+        <div class="stat-block"><div class="stat-label">BEST DAY</div><div class="stat-val" id="rp-bestday">0</div></div>
+        <div class="stat-block"><div class="stat-label">YOU</div><div class="stat-val" id="rp-you">0</div></div>
+        <div class="stat-block"><div class="stat-label">PARTNER</div><div class="stat-val" id="rp-partner">0</div></div>
+        <div class="sprite-area">
+          <div class="idle-sprite you-sprite-sm" id="sp-you"></div>
+          <div class="idle-sprite partner-sprite-sm" id="sp-partner"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="drop-overlay" class="hidden">
+      <div class="drop-msg nes-border">
+        <div class="blink">COMPLETE A CHORE</div>
+        <div class="drop-sub">TO DROP A BLOCK!</div>
+      </div>
+    </div>
+
+    <!-- touch controls -->
+    <div class="touch-controls">
+      <button class="touch-btn" id="tc-left">◄</button>
+      <button class="touch-btn" id="tc-rotate">↺</button>
+      <button class="touch-btn" id="tc-right">►</button>
+      <button class="touch-btn" id="tc-down">▼</button>
+    </div>
+  </div>
+
+  <!-- ══ GAME OVER ══ -->
+  <div id="screen-gameover" class="screen">
+    <div class="gameover-content nes-border">
+      <div id="gameover-title" class="gameover-title">GAME OVER</div>
+      <div class="gameover-scores">
+        <div class="score-row"><span>SCORE</span><span id="go-score">0</span></div>
+        <div class="score-row"><span>ROWS CLEARED</span><span id="go-lines">0</span></div>
+        <div class="score-row"><span>CHORES DONE</span><span id="go-chores">0</span></div>
+        <div class="score-row hi"><span>HI-SCORE</span><span id="go-hiscore">0</span></div>
+      </div>
+      <button class="nes-btn" id="btn-play-again">► PLAY AGAIN</button>
+      <button class="nes-btn secondary" id="btn-go-home">⌂ HOME</button>
+    </div>
+  </div>
+
+</div>
+<script src="audio.js"></script>
+<script type="module" src="firebase.js"></script>
+</body>
+</html>
